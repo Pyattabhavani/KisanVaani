@@ -23,4 +23,6 @@ if query:
     st.success(answer)
 
     file = f"reply_{uuid.uuid4()}.mp3"
-    gTTS(answ)
+    gTTS(answer, lang="te").save(file)
+    st.audio(file)
+    os.remove(file)
