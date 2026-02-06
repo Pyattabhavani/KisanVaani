@@ -23,4 +23,4 @@ if query:
     st.success(answer)
 
     file = f"reply_{uuid.uuid4()}.mp3"
-    gTTS(answ
+    gTTS(answ)
