@@ -1,47 +1,13 @@
 import streamlit as st
+import speech_recognition as sr
 from gtts import gTTS
-import uuid
 import os
+import uuid
 
 st.set_page_config(page_title="KisanVaani", page_icon="🌾")
 st.title("🌾 KisanVaani – Telugu Voice Assistant")
 
-if "spoken_text" not in st.session_state:
-    st.session_state.spoken_text = ""
-
-st.markdown("### 🎤 మాట్లాడండి")
-
-# JavaScript – Speech to Text
-st.components.v1.html(
-    """
-    <script>
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'te-IN';
-
-    function startRec() {
-        recognition.start();
-    }
-
-    recognition.onresult = function(event) {
-        const text = event.results[0][0].transcript;
-        window.parent.postMessage(
-            { type: "streamlit:setComponentValue", value: text },
-            "*"
-        );
-    };
-    </script>
-
-    <button onclick="startRec()" style="font-size:22px;">
-        🎤 మాట్లాడండి
-    </button>
-    """,
-    height=100,
-)
-
-# Receive spoken text safely
-spoken_text = st.session_state.get("spoken_text", "")
-
-def respond(text: str):
+def respond(text):
     if "వాతావరణం" in text:
         return "ఈరోజు వాతావరణం వ్యవసాయానికి అనుకూలంగా ఉంది"
     elif "వరి" in text:
@@ -51,17 +17,25 @@ def respond(text: str):
     else:
         return "దయచేసి పంట లేదా వాతావరణం గురించి అడగండి"
 
-# Process only if text is valid
-if isinstance(spoken_text, str) and spoken_text.strip():
-    st.success(f"మీ ప్రశ్న: {spoken_text}")
+st.info("🎤 Speak & then press the button")
 
-    answer = respond(spoken_text)
-    st.info(f"సమాధానం: {answer}")
+if st.button("🎤 మాట్లాడండి"):
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.write("వినుతున్నాను...")
+        audio = r.listen(source)
 
-    # Text to Speech
-    audio_file = f"reply_{uuid.uuid4()}.mp3"
-    tts = gTTS(answer, lang="te")
-    tts.save(audio_file)
+    try:
+        text = r.recognize_google(audio, language="te-IN")
+        st.success(f"మీ ప్రశ్న: {text}")
 
-    st.audio(audio_file, format="audio/mp3")
-    os.remove(audio_file)
+        answer = respond(text)
+        st.info(f"సమాధానం: {answer}")
+
+        file = f"reply_{uuid.uuid4()}.mp3"
+        gTTS(answer, lang="te").save(file)
+        st.audio(file)
+        os.remove(file)
+
+    except:
+        st.error("మళ్లీ ప్రయత్నించండి")
