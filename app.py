@@ -1,31 +1,53 @@
 import streamlit as st
 from gtts import gTTS
+import base64
 import os
 
 st.set_page_config(page_title="KisanVaani", page_icon="🌾")
-st.title("🌾 KisanVaani – రైతుల వాయిస్ సహాయకుడు")
+st.title("🌾 KisanVaani – Telugu Voice Assistant (Web)")
 
-st.info("⚠️ వెబ్ డెమో కోసం టెక్స్ట్ ఇన్‌పుట్ ఉపయోగించబడుతుంది")
+st.markdown("### 🎤 మాట్లాడండి (Chrome Browser లో మాత్రమే పని చేస్తుంది)")
 
-query = st.text_input("👉 మీ ప్రశ్నను తెలుగులో టైప్ చేయండి:")
+# JavaScript for speech recognition
+st.components.v1.html("""
+<script>
+var recognition = new webkitSpeechRecognition();
+recognition.lang = 'te-IN';
+recognition.continuous = false;
+
+function startDictation() {
+    recognition.start();
+}
+
+recognition.onresult = function(event) {
+    var text = event.results[0][0].transcript;
+    document.getElementById("spoken").value = text;
+};
+</script>
+
+<button onclick="startDictation()">🎤 మాట్లాడండి</button>
+<br><br>
+<textarea id="spoken" rows="3" cols="40" placeholder="మీ మాట ఇక్కడ కనిపిస్తుంది"></textarea>
+""", height=200)
+
+query = st.text_input("🔁 మాటలను ఇక్కడ paste చేయండి:")
 
 def respond(text):
     if "వాతావరణం" in text:
         return "ఈరోజు వాతావరణం వ్యవసాయానికి అనుకూలంగా ఉంది"
     elif "వరి" in text:
         return "వరి పంటకు నైట్రోజన్ ఎరువు ఉపయోగించండి"
-    elif "ఎరువు" in text:
-        return "పంట రకాన్ని బట్టి సరైన ఎరువు ఉపయోగించాలి"
     else:
         return "పంట లేదా వాతావరణం గురించి అడగండి"
 
 if st.button("సమాధానం పొందండి"):
     if query:
         answer = respond(query)
-        st.success(f"సమాధానం: {answer}")
+        st.success(answer)
 
         tts = gTTS(answer, lang="te")
         tts.save("reply.mp3")
-        st.audio("reply.mp3")
-    else:
-        st.warning("దయచేసి ప్రశ్న టైప్ చేయండి")
+
+        audio_file = open("reply.mp3", "rb")
+        audio_bytes = audio_file.read()
+        st.audio(audio_bytes, format="audio/mp3")
