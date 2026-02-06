@@ -1,20 +1,13 @@
 import streamlit as st
-import speech_recognition as sr
 from gtts import gTTS
 import os
 
 st.set_page_config(page_title="KisanVaani", page_icon="🌾")
 st.title("🌾 KisanVaani – రైతుల వాయిస్ సహాయకుడు")
 
-def listen_telugu():
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        st.info("🎤 మాట్లాడండి...")
-        audio = r.listen(source)
-    try:
-        return r.recognize_google(audio, language="te-IN")
-    except:
-        return None
+st.info("⚠️ వెబ్ డెమో కోసం టెక్స్ట్ ఇన్‌పుట్ ఉపయోగించబడుతుంది")
+
+query = st.text_input("👉 మీ ప్రశ్నను తెలుగులో టైప్ చేయండి:")
 
 def respond(text):
     if "వాతావరణం" in text:
@@ -26,15 +19,13 @@ def respond(text):
     else:
         return "పంట లేదా వాతావరణం గురించి అడగండి"
 
-if st.button("🎤 మాట్లాడండి"):
-    query = listen_telugu()
+if st.button("సమాధానం పొందండి"):
     if query:
-        st.success(f"మీ ప్రశ్న: {query}")
         answer = respond(query)
-        st.info(f"సమాధానం: {answer}")
+        st.success(f"సమాధానం: {answer}")
 
-        tts = gTTS(answer, lang='te')
+        tts = gTTS(answer, lang="te")
         tts.save("reply.mp3")
         st.audio("reply.mp3")
     else:
-        st.error("స్పష్టంగా వినిపించలేదు")
+        st.warning("దయచేసి ప్రశ్న టైప్ చేయండి")
