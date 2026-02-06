@@ -1,23 +1,24 @@
 import streamlit as st
 from gtts import gTTS
-import base64
 import uuid
 import os
 
 st.set_page_config(page_title="KisanVaani", page_icon="🌾")
 st.title("🌾 KisanVaani – Telugu Voice Assistant")
 
-st.markdown("### 🎤 మాట్లాడండి (Chrome browser లో మాత్రమే పని చేస్తుంది)")
+if "spoken_text" not in st.session_state:
+    st.session_state.spoken_text = ""
 
-# JavaScript component: voice → auto-send to Streamlit
-spoken_text = st.components.v1.html(
+st.markdown("### 🎤 మాట్లాడండి")
+
+# JavaScript – Speech to Text
+st.components.v1.html(
     """
     <script>
-    var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.lang = 'te-IN';
-    recognition.continuous = false;
 
-    function startRecognition() {
+    function startRec() {
         recognition.start();
     }
 
@@ -30,14 +31,17 @@ spoken_text = st.components.v1.html(
     };
     </script>
 
-    <button onclick="startRecognition()" style="font-size:20px;">
+    <button onclick="startRec()" style="font-size:22px;">
         🎤 మాట్లాడండి
     </button>
     """,
     height=100,
 )
 
-def respond(text):
+# Receive spoken text safely
+spoken_text = st.session_state.get("spoken_text", "")
+
+def respond(text: str):
     if "వాతావరణం" in text:
         return "ఈరోజు వాతావరణం వ్యవసాయానికి అనుకూలంగా ఉంది"
     elif "వరి" in text:
@@ -45,19 +49,19 @@ def respond(text):
     elif "ఎరువు" in text:
         return "పంట రకాన్ని బట్టి సరైన ఎరువు ఉపయోగించాలి"
     else:
-        return "పంట లేదా వాతావరణం గురించి అడగండి"
+        return "దయచేసి పంట లేదా వాతావరణం గురించి అడగండి"
 
-if spoken_text:
+# Process only if text is valid
+if isinstance(spoken_text, str) and spoken_text.strip():
     st.success(f"మీ ప్రశ్న: {spoken_text}")
 
     answer = respond(spoken_text)
     st.info(f"సమాధానం: {answer}")
 
-    # Generate Telugu voice
-    filename = f"reply_{uuid.uuid4()}.mp3"
+    # Text to Speech
+    audio_file = f"reply_{uuid.uuid4()}.mp3"
     tts = gTTS(answer, lang="te")
-    tts.save(filename)
+    tts.save(audio_file)
 
-    st.audio(filename, format="audio/mp3")
-
-    os.remove(filename)
+    st.audio(audio_file, format="audio/mp3")
+    os.remove(audio_file)
