@@ -1,63 +1,58 @@
 import streamlit as st
-from gtts import gTTS
-import base64
-import uuid
-import os
+from openai import OpenAI
+import time
 
-st.set_page_config(page_title="KisanVaani", page_icon="🌾")
+# -----------------------------
+# Page Config
+# -----------------------------
+st.set_page_config(page_title="KisanVaani - Telugu Voice Assistant", page_icon="🌾")
+
 st.title("🌾 KisanVaani – Telugu Voice Assistant")
 
-st.markdown("### 🎤 మాట్లాడండి (Chrome browser లో మాత్రమే పని చేస్తుంది)")
+st.markdown("### రైతుల కోసం తెలుగులో AI సహాయకుడు")
+st.write("పంటలు, పురుగులు, మందుల మోతాదు, పశుపోషణ, రుణాలు, మార్కెట్ ధరలు, ప్రభుత్వ పథకాలు — అన్నింటికీ సమాధానం ఇస్తుంది.")
 
-# JavaScript component: voice → auto-send to Streamlit
-spoken_text = st.components.v1.html(
-    """
-    <script>
-    var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'te-IN';
-    recognition.continuous = false;
+# -----------------------------
+# OpenAI Client
+# -----------------------------
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-    function startRecognition() {
-        recognition.start();
-    }
+# -----------------------------
+# AI Function
+# -----------------------------
+def ai_respond(question):
+    try:
+        time.sleep(1)  # Prevent rate-limit burst
 
-    recognition.onresult = function(event) {
-        const text = event.results[0][0].transcript;
-        window.parent.postMessage(
-            { type: "streamlit:setComponentValue", value: text },
-            "*"
-        );
-    };
-    </script>
+        SYSTEM_PROMPT = """
+        మీరు రైతుల కోసం రూపొందించిన AI సహాయకుడు.
+        పంటలు, పురుగులు, మందుల మోతాదు, పశుపోషణ,
+        రుణాలు, ప్రభుత్వ పథకాలు, మార్కెట్ ధరలు —
+        అన్నిటికీ సరళమైన తెలుగు భాషలో సమాధానం ఇవ్వండి.
+        """
 
-    <button onclick="startRecognition()" style="font-size:20px;">
-        🎤 మాట్లాడండి
-    </button>
-    """,
-    height=100,
-)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": question}
+            ],
+            temperature=0.4,
+            max_tokens=400
+        )
 
-def respond(text):
-    if "వాతావరణం" in text:
-        return "ఈరోజు వాతావరణం వ్యవసాయానికి అనుకూలంగా ఉంది"
-    elif "వరి" in text:
-        return "వరి పంటకు నైట్రోజన్ ఎరువు ఉపయోగించండి"
-    elif "ఎరువు" in text:
-        return "పంట రకాన్ని బట్టి సరైన ఎరువు ఉపయోగించాలి"
-    else:
-        return "పంట లేదా వాతావరణం గురించి అడగండి"
+        return response.choices[0].message.content
 
-if spoken_text:
-    st.success(f"మీ ప్రశ్న: {spoken_text}")
+    except Exception:
+        return "⚠️ ప్రస్తుతం సర్వర్ బిజీగా ఉంది. కొంచెం సేపటి తర్వాత మళ్లీ ప్రయత్నించండి."
 
-    answer = respond(spoken_text)
+# -----------------------------
+# User Input Section
+# -----------------------------
+user_question = st.text_input("మీ ప్రశ్న అడగండి:")
+
+if user_question:
+    st.success(f"మీ ప్రశ్న: {user_question}")
+
+    answer = ai_respond(str(user_question))
     st.info(f"సమాధానం: {answer}")
-
-    # Generate Telugu voice
-    filename = f"reply_{uuid.uuid4()}.mp3"
-    tts = gTTS(answer, lang="te")
-    tts.save(filename)
-
-    st.audio(filename, format="audio/mp3")
-
-    os.remove(filename)
