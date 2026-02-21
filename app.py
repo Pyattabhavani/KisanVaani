@@ -1,33 +1,42 @@
 import streamlit as st
 from openai import OpenAI
+from gtts import gTTS
+from streamlit_mic_recorder import mic_recorder
+import os
 import time
 
-# -----------------------------
-# Page Config
-# -----------------------------
-st.set_page_config(page_title="KisanVaani - Telugu Voice Assistant", page_icon="🌾")
+st.set_page_config(page_title="KisanVaani Voice Assistant", page_icon="🌾")
 
-st.title("🌾 KisanVaani – Telugu Voice Assistant")
+st.title("🌾 KisanVaani – Voice to Voice AI")
+st.write("🎤 మాట్లాడండి → 🤖 AI సమాధానం → 🔊 వాయిస్ లో వినండి")
 
-st.markdown("### రైతుల కోసం తెలుగులో AI సహాయకుడు")
-st.write("పంటలు, పురుగులు, మందుల మోతాదు, పశుపోషణ, రుణాలు, మార్కెట్ ధరలు, ప్రభుత్వ పథకాలు — అన్నింటికీ సమాధానం ఇస్తుంది.")
-
-# -----------------------------
+# -----------------------
 # OpenAI Client
-# -----------------------------
+# -----------------------
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# -----------------------------
-# AI Function
-# -----------------------------
-def ai_respond(question):
+# -----------------------
+# Speech to Text (Whisper)
+# -----------------------
+def speech_to_text(audio_bytes):
     try:
-        time.sleep(1)  # Prevent rate-limit burst
+        transcript = client.audio.transcriptions.create(
+            model="gpt-4o-mini-transcribe",
+            file=audio_bytes
+        )
+        return transcript.text
+    except:
+        return None
 
+# -----------------------
+# AI Telugu Response
+# -----------------------
+def ai_response(question):
+    try:
         SYSTEM_PROMPT = """
         మీరు రైతుల కోసం రూపొందించిన AI సహాయకుడు.
         పంటలు, పురుగులు, మందుల మోతాదు, పశుపోషణ,
-        రుణాలు, ప్రభుత్వ పథకాలు, మార్కెట్ ధరలు —
+        రుణాలు, మార్కెట్ ధరలు, ప్రభుత్వ పథకాలు —
         అన్నిటికీ సరళమైన తెలుగు భాషలో సమాధానం ఇవ్వండి.
         """
 
@@ -43,16 +52,40 @@ def ai_respond(question):
 
         return response.choices[0].message.content
 
-    except Exception:
-        return "⚠️ ప్రస్తుతం సర్వర్ బిజీగా ఉంది. కొంచెం సేపటి తర్వాత మళ్లీ ప్రయత్నించండి."
+    except:
+        return "⚠️ ప్రస్తుతం సర్వర్ బిజీగా ఉంది."
 
-# -----------------------------
-# User Input Section
-# -----------------------------
-user_question = st.text_input("మీ ప్రశ్న అడగండి:")
+# -----------------------
+# Text to Telugu Voice
+# -----------------------
+def text_to_speech(text):
+    tts = gTTS(text=text, lang="te")
+    filename = "response.mp3"
+    tts.save(filename)
+    return filename
 
-if user_question:
-    st.success(f"మీ ప్రశ్న: {user_question}")
+# -----------------------
+# Voice Recorder Button
+# -----------------------
+audio = mic_recorder(
+    start_prompt="🎤 మాట్లాడండి",
+    stop_prompt="⏹️ ఆపు",
+    key="recorder"
+)
 
-    answer = ai_respond(str(user_question))
-    st.info(f"సమాధానం: {answer}")
+if audio:
+    st.audio(audio["bytes"])
+
+    # Convert speech to text
+    spoken_text = speech_to_text(audio["bytes"])
+
+    if spoken_text:
+        st.success(f"మీ ప్రశ్న: {spoken_text}")
+
+        # AI answer
+        answer = ai_response(spoken_text)
+        st.info(f"సమాధానం: {answer}")
+
+        # Convert to voice
+        audio_file = text_to_speech(answer)
+        st.audio(audio_file)
