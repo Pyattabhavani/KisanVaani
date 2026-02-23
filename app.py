@@ -1,5 +1,4 @@
 import streamlit as st
-from openai import OpenAI
 from gtts import gTTS
 import requests
 import tempfile
@@ -13,13 +12,12 @@ st.title("🌾 KisanVaani+ Smart Farmer Assistant")
 st.markdown("### 🌦 వాతావరణ సమాచారం పొందండి")
 
 # ----------------------------
-# API Keys
+# Weather API Key
 # ----------------------------
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 WEATHER_KEY = st.secrets["WEATHER_API_KEY"]
 
 # ----------------------------
-# Weather Fetch Function
+# Get Weather Data
 # ----------------------------
 def get_weather(city):
     try:
@@ -42,7 +40,7 @@ def get_weather(city):
 
 
 # ----------------------------
-# Telugu Weather Report Generator
+# Telugu Weather Report (Manual Logic)
 # ----------------------------
 def generate_telugu_weather(city):
     weather = get_weather(city)
@@ -50,29 +48,35 @@ def generate_telugu_weather(city):
     if not weather:
         return "క్షమించండి, వాతావరణ సమాచారం పొందలేకపోయాము. నగరం పేరు సరైనదిగా ఇవ్వండి."
 
-    prompt = f"""
-    నగరం: {city}
-    ఉష్ణోగ్రత: {weather['temp']}°C
-    తేమ: {weather['humidity']}%
-    గాలి వేగం: {weather['wind']} m/s
-    పరిస్థితి: {weather['description']}
+    temp = weather["temp"]
+    humidity = weather["humidity"]
+    wind = weather["wind"]
+    desc = weather["description"]
 
-    పై సమాచారం ఆధారంగా రైతులకు సరళమైన తెలుగు వాతావరణ నివేదిక ఇవ్వండి.
-    స్ప్రేయింగ్ లేదా వ్యవసాయ పనులకు అనుకూలమా కాదా కూడా చెప్పండి.
-    """
+    report = f"""
+🌡 ఉష్ణోగ్రత: {temp}°C  
+💧 తేమ: {humidity}%  
+🌬 గాలి వేగం: {wind} మీ/సెకన్డు  
+☁ పరిస్థితి: {desc}
+"""
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=300
-    )
+    # Farming Advice Logic
+    if wind < 8:
+        report += "\n👉 స్ప్రేయింగ్ చేయడానికి అనుకూలమైన రోజు."
+    else:
+        report += "\n👉 గాలి ఎక్కువగా ఉంది. స్ప్రేయింగ్ చేయడం మంచిది కాదు."
 
-    return response.choices[0].message.content
+    if humidity > 80:
+        report += "\n👉 తేమ ఎక్కువగా ఉంది. ఫంగస్ వచ్చే అవకాశం ఉంది."
+
+    if temp > 35:
+        report += "\n👉 ఉష్ణోగ్రత ఎక్కువగా ఉంది. పంటలకు నీరు అవసరం."
+
+    return report
 
 
 # ----------------------------
-# Voice Output Function
+# Voice Output
 # ----------------------------
 def speak(text):
     tts = gTTS(text=text, lang="te")
@@ -83,7 +87,7 @@ def speak(text):
 
 
 # ----------------------------
-# UI Section
+# UI
 # ----------------------------
 city = st.text_input("మీ జిల్లా లేదా నగరం పేరు (English లో) ఇవ్వండి:")
 
