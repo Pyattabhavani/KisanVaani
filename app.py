@@ -36,7 +36,7 @@ st.markdown("""
 
 # ---------------- HEADER ----------------
 st.markdown("<div class='center big-title'>🌾 KisanVaani+ Smart Farmer Assistant</div>", unsafe_allow_html=True)
-st.markdown("<div class='center'>🌦 5 రోజుల వాతావరణ నివేదిక</div>", unsafe_allow_html=True)
+st.markdown("<div class='center'>🌦 కిసాన్ వాని </div>", unsafe_allow_html=True)
 st.markdown("---")
 
 WEATHER_KEY = st.secrets["WEATHER_API_KEY"]
